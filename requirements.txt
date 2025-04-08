@@ -4,3 +4,9 @@ pydantic
 python-dotenv
 paho-mqtt
 pymongo
+pyk4a  # Para Azure Kinect DK
+opencv-python  # Para procesamiento de imágenes
+numpy
+torch
+transformers
+huggingface_hub
