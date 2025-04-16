@@ -6,6 +6,10 @@ import time
 import copy
 import os
 
+# Habilitar soporte para GPU
+o3d.utility.set_verbosity_level(o3d.utility.VerbosityLevel.Debug)
+o3d.utility.set_global_jit_flag(True)
+
 class KinectReconstructor:
     def __init__(self):
         # Configure Kinect
@@ -54,6 +58,10 @@ class KinectReconstructor:
         self.is_recording = False
         self.output_folder = "reconstruction_output"
         os.makedirs(self.output_folder, exist_ok=True)
+        
+        # Habilitar GPU para operaciones intensivas
+        self.device = o3d.core.Device("CUDA:0" if o3d.core.cuda.is_available() else "CPU:0")
+        print(f"Using device: {self.device}")
     
     def process_images(self, color_img, depth_img):
         # Flip vertical and horizontal (if needed for your setup)
@@ -75,38 +83,48 @@ class KinectReconstructor:
         return rgbd
     
     def preprocess_point_cloud(self, pcd):
-        # Remove outliers
-        pcd, _ = pcd.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
+        # Convertir a tensor para operaciones en GPU
+        pcd_tensor = o3d.t.geometry.PointCloud.from_legacy(pcd)
         
-        # Downsample
-        pcd = pcd.voxel_down_sample(self.voxel_size)
+        # Remove outliers usando GPU
+        pcd_tensor = pcd_tensor.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
         
-        # Compute normals
-        pcd.estimate_normals(
-            search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.1, max_nn=30)
+        # Downsample usando GPU
+        pcd_tensor = pcd_tensor.voxel_down_sample(self.voxel_size)
+        
+        # Compute normals usando GPU
+        pcd_tensor.estimate_normals(
+            max_nn=30,
+            radius=self.voxel_size * 2
         )
         
-        return pcd
+        # Convertir de vuelta a formato legacy
+        return pcd_tensor.to_legacy()
     
     def register_frames(self, source, target):
         """Register source point cloud to target using point-to-plane ICP"""
         
-        # Initial alignment using feature matching
-        source_down = source.voxel_down_sample(self.voxel_size * 2)
-        target_down = target.voxel_down_sample(self.voxel_size * 2)
+        # Convertir a tensores para operaciones en GPU
+        source_tensor = o3d.t.geometry.PointCloud.from_legacy(source)
+        target_tensor = o3d.t.geometry.PointCloud.from_legacy(target)
         
+        # Downsample usando GPU
+        source_down = source_tensor.voxel_down_sample(self.voxel_size * 2)
+        target_down = target_tensor.voxel_down_sample(self.voxel_size * 2)
+        
+        # Compute FPFH features usando GPU
         source_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
-            source_down,
+            source_down.to_legacy(),
             o3d.geometry.KDTreeSearchParamHybrid(radius=self.voxel_size * 5, max_nn=100)
         )
         target_fpfh = o3d.pipelines.registration.compute_fpfh_feature(
-            target_down,
+            target_down.to_legacy(),
             o3d.geometry.KDTreeSearchParamHybrid(radius=self.voxel_size * 5, max_nn=100)
         )
         
-        # Fast global registration for coarse alignment
+        # Fast global registration usando GPU
         result_fast = o3d.pipelines.registration.registration_ransac_based_on_feature_matching(
-            source_down, target_down,
+            source_down.to_legacy(), target_down.to_legacy(),
             source_fpfh, target_fpfh,
             mutual_filter=True,
             max_correspondence_distance=self.distance_threshold * 2,
@@ -119,7 +137,7 @@ class KinectReconstructor:
             criteria=o3d.pipelines.registration.RANSACConvergenceCriteria(4000000, 500)
         )
         
-        # Point-to-plane ICP for fine alignment
+        # Point-to-plane ICP usando GPU
         result_icp = o3d.pipelines.registration.registration_icp(
             source, target, self.distance_threshold, result_fast.transformation,
             o3d.pipelines.registration.TransformationEstimationPointToPlane(),

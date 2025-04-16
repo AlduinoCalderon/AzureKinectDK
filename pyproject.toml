@@ -1,0 +1,43 @@
+[project]
+name = "AzureKinect3DReconstruction"
+version = "0.1.0"
+description = "3D Reconstruction using Azure Kinect DK camera with GPU acceleration"
+authors = [
+    {name = "Alduino", email = "alduinocalderon@gmaiil.com"}
+]
+dependencies = [
+    "numpy>=1.21.0",
+    "opencv-python>=4.5.0",
+    "pyk4a>=1.4.0",
+    "open3d>=0.17.0",
+    "plotly>=5.0.0"
+]
+requires-python = ">=3.8"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "^1.21.0"
+opencv-python = "^4.5.0"
+pyk4a = "^1.4.0"
+open3d = "^0.17.0"
+plotly = "^5.0.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.0.0"
+black = "^22.0.0"
+flake8 = "^4.0.0"
+
+[project.optional-dependencies]
+gpu = [
+    "cupy-cuda11x>=11.0.0",  # Ajusta según tu versión de CUDA
+    "torch>=1.10.0",
+    "torchvision>=0.11.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/AlduinoCalderon/AzureKinectDK"
+Repository = "https://github.com/AlduinoCalderon/AzureKinectDK.git" 

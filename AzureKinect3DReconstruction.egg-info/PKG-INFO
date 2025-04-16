@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: AzureKinect3DReconstruction
+Version: 0.1.0
+Summary: 3D Reconstruction using Azure Kinect DK camera with GPU acceleration
+Author-email: Alduino <alduinocalderon@gmaiil.com>
+Project-URL: Homepage, https://github.com/AlduinoCalderon/AzureKinectDK
+Project-URL: Repository, https://github.com/AlduinoCalderon/AzureKinectDK.git
+Requires-Python: >=3.8
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: opencv-python>=4.5.0
+Requires-Dist: pyk4a>=1.4.0
+Requires-Dist: open3d>=0.17.0
+Requires-Dist: plotly>=5.0.0
+Provides-Extra: gpu
+Requires-Dist: cupy-cuda11x>=11.0.0; extra == "gpu"
+Requires-Dist: torch>=1.10.0; extra == "gpu"
+Requires-Dist: torchvision>=0.11.0; extra == "gpu"
